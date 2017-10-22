@@ -2,7 +2,9 @@
 title: "Practical ML Course Project"
 author: "Daniel Acker"
 date: "10/21/2017"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 Load libraries and set the seed for the analysis.
