@@ -8,7 +8,7 @@ output: html_document
 Load libraries and set the seed for the analysis.
 
 ```{r, message=FALSE, warning=FALSE}
-library(dplyr);library(reshape2);library(caret);library(ggplot2)
+library(dplyr);library(reshape2);library(caret);library(ggplot2);library(randomForest())
 set.seed(1692)
 ```
 
