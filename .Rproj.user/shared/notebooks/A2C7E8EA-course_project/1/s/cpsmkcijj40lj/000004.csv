@@ -1,0 +1,6 @@
+"0","# load training data"
+"0","all_data = read.csv(""pml-training.csv"")"
+"0","# split into training and testing set"
+"0","train_idx = createDataPartition(all_data$classe, p=0.6, list=F)"
+"0","training = all_data[train_idx,]"
+"0","testing = all_data[-train_idx,]"

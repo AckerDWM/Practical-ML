@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "---\ntitle: \"Practical ML Course Project\"\nauthor: \"Daniel Acker\"\ndate: \"10/21/2017\"\noutput: html_document\n---\n\nLoad libraries and set the seed for the analysis.\n\n```{r, message=FALSE, warning=FALSE}\nlibrary(dplyr);library(reshape2);library(caret);library(ggplot2)\nset.seed(1692)\n```\n\n# Loading data\n\nLoad the data and partition into training and testing sets for cross validation.\n\n```{r Loading the data}\n# load training data\nall_data = read.csv(\"pml-training.csv\")\n\n# split into training and testing set\ntrain_idx = createDataPartition(all_data$classe, p=0.6, list=F)\ntraining = all_data[train_idx,]\ntesting = all_data[-train_idx,]\n```\n\n# Preprocessing\n\nNow I'll do some preprocessing to remove irrelevant and low variance variables. I'll also impute missing values in the remaining variables.\n\n```{r Preprocessing}\n# separate the outcome\ntraining_y = training$classe\n\n# preprocessing\n## remove factor variables and variables with little meaning\nfactor_idx = sapply(training, is.factor)\ntraining_x = training[,!factor_idx] %>% \n  dplyr::select(-X, -raw_timestamp_part_1, -raw_timestamp_part_2, -num_window)\n\n## remove variables with low variance and impute missing data\nprocessing = preProcess(training_x, method=c(\"nzv\", \"knnImpute\"))\ntraining_processed = predict(processing, training_x)\n```\n\n# Model training\n\nEven after preprocessing to remove low variance variables, there are many variables, and their relative importance is difficult to intuit. This data seems like a good candidate for a random forest model, which can be highly accurate but difficult to interpret.\n\n```{r Fitting the model}\n# fit a random forest model\nmodel = randomForest(x=training_processed, y=training_y)\n\n# show statistics\nconfusionMatrix(predict(model, training_processed), training_y)\n```\n\n# Cross-validation\n\nThe random forest model is perfectly accurate, indicating that this model fits the training data very well and may be overfitted. I expect that the model will not perform as well on the test data.\n\nNow I'll test the model's ability on out-of-sample prediction using the testing set.\n\n```{r Testing out-of-sample error}\n# separate outcome from testing set\ntesting_y = testing$classe\n\n# process testing set\nfactor_idx = sapply(training, is.factor)\ntesting_x = testing[,!factor_idx] %>% \n  dplyr::select(-X, -raw_timestamp_part_1, -raw_timestamp_part_2, -num_window)\ntesting_processed = predict(processing, testing_x)\n\n# predict outcome on the testing set\nY = predict(model, testing_processed)\n\n# show statistics\nconfusionMatrix(Y, testing_y)\n```\n\nThe model is 99% accurate on the test data, indicating that it generalizes well to out-of-sample data.\n\n# Final predictions\n\nFinally, I'll load the true test data and make predictions to submit.\n\n```{r Predicting on the test set}\ntest_data = read.csv(\"pml-testing.csv\")\n\n# process test data\ntest_data_x = test_data[,!factor_idx] %>% \n  dplyr::select(-X, -raw_timestamp_part_1, -raw_timestamp_part_2, -num_window)\ntest_data_x_processed = predict(processing, test_data_x)\n\n# make predictions\nY_test_data = predict(model, test_data_x_processed)\nprint(Y_test_data)\n```\n\n",
+    "created" : 1508601795755.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2808889607",
+    "id" : "109A08D9",
+    "lastKnownWriteTime" : 1508705354,
+    "last_content_update" : 1508705354354,
+    "path" : "~/Desktop/Practical ML Project/course_project.Rmd",
+    "project_path" : "course_project.Rmd",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

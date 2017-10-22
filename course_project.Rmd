@@ -1,0 +1,101 @@
+---
+title: "Practical ML Course Project"
+author: "Daniel Acker"
+date: "10/21/2017"
+output: html_document
+---
+
+Load libraries and set the seed for the analysis.
+
+```{r, message=FALSE, warning=FALSE}
+library(dplyr);library(reshape2);library(caret);library(ggplot2)
+set.seed(1692)
+```
+
+# Loading data
+
+Load the data and partition into training and testing sets for cross validation.
+
+```{r Loading the data}
+# load training data
+all_data = read.csv("pml-training.csv")
+
+# split into training and testing set
+train_idx = createDataPartition(all_data$classe, p=0.6, list=F)
+training = all_data[train_idx,]
+testing = all_data[-train_idx,]
+```
+
+# Preprocessing
+
+Now I'll do some preprocessing to remove irrelevant and low variance variables. I'll also impute missing values in the remaining variables.
+
+```{r Preprocessing}
+# separate the outcome
+training_y = training$classe
+
+# preprocessing
+## remove factor variables and variables with little meaning
+factor_idx = sapply(training, is.factor)
+training_x = training[,!factor_idx] %>% 
+  dplyr::select(-X, -raw_timestamp_part_1, -raw_timestamp_part_2, -num_window)
+
+## remove variables with low variance and impute missing data
+processing = preProcess(training_x, method=c("nzv", "knnImpute"))
+training_processed = predict(processing, training_x)
+```
+
+# Model training
+
+Even after preprocessing to remove low variance variables, there are many variables, and their relative importance is difficult to intuit. This data seems like a good candidate for a random forest model, which can be highly accurate but difficult to interpret.
+
+```{r Fitting the model}
+# fit a random forest model
+model = randomForest(x=training_processed, y=training_y)
+
+# show statistics
+confusionMatrix(predict(model, training_processed), training_y)
+```
+
+# Cross-validation
+
+The random forest model is perfectly accurate, indicating that this model fits the training data very well and may be overfitted. I expect that the model will not perform as well on the test data.
+
+Now I'll test the model's ability on out-of-sample prediction using the testing set.
+
+```{r Testing out-of-sample error}
+# separate outcome from testing set
+testing_y = testing$classe
+
+# process testing set
+factor_idx = sapply(training, is.factor)
+testing_x = testing[,!factor_idx] %>% 
+  dplyr::select(-X, -raw_timestamp_part_1, -raw_timestamp_part_2, -num_window)
+testing_processed = predict(processing, testing_x)
+
+# predict outcome on the testing set
+Y = predict(model, testing_processed)
+
+# show statistics
+confusionMatrix(Y, testing_y)
+```
+
+The model is 99% accurate on the test data, indicating that it generalizes well to out-of-sample data.
+
+# Final predictions
+
+Finally, I'll load the true test data and make predictions to submit.
+
+```{r Predicting on the test set}
+test_data = read.csv("pml-testing.csv")
+
+# process test data
+test_data_x = test_data[,!factor_idx] %>% 
+  dplyr::select(-X, -raw_timestamp_part_1, -raw_timestamp_part_2, -num_window)
+test_data_x_processed = predict(processing, test_data_x)
+
+# make predictions
+Y_test_data = predict(model, test_data_x_processed)
+print(Y_test_data)
+```
+
